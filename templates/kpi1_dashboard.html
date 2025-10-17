@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 1: Tasa de Facturación Atípica - Luz del Sur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/info_modals.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-bolt"></i>
+            <h2>Luz del Sur</h2>
+        </div>
+        
+        <div class="nav-menu">
+            <a href="/" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Resumen General</span>
+            </a>
+            
+            <div class="nav-section">
+                <h3>KPIs Específicos</h3>
+                
+                <a href="/kpi1" class="nav-item kpi-nav active">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>KPI 1: Lecturas Estimadas</span>
+                    <div class="kpi-status" id="nav-kpi1-status">--</div>
+                </a>
+                
+                <a href="/kpi2" class="nav-item kpi-nav">
+                    <i class="fas fa-battery-empty"></i>
+                    <span>KPI 2: Consumo Cero</span>
+                </a>
+                
+                <a href="/kpi3" class="nav-item kpi-nav">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>KPI 3: Diferencias</span>
+                </a>
+                
+                <a href="/kpi6" class="nav-item kpi-nav">
+                    <i class="fas fa-link"></i>
+                    <span>KPI 6: Continuidad</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="kpi-header">
+            <div class="header-content">
+                <div class="kpi-title-section">
+                    <div class="kpi-icon-large critical">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="kpi-title-info">
+                        <h1>KPI 1: Tasa de Facturación Atípica</h1>
+                        <p>Proporción de facturas cuyo consumo facturado difiere en ±30% o más del consumo medido/validado</p>
+                        <div class="kpi-formula-display">
+                            <strong>Fórmula:</strong> <code>Tasa (%) = [# facturas con |Facturado − Medido| / Medido ≥ 0.30] / [Total facturas] × 100</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-status-section">
+                    <div class="current-value" id="currentValueContainer">
+                        <span class="value" id="currentValue">--</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="status-info">
+                        <div class="status-badge" id="statusBadge">CARGANDO...</div>
+                        <div class="meta-target">Meta: ≤ 2.0%</div>
+                        <div class="deviation" id="deviation">-- sobre meta</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="fechaInicio">Fecha Inicio:</label>
+                    <input type="date" id="fechaInicio" name="fechaInicio">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="fechaFin">Fecha Fin:</label>
+                    <input type="date" id="fechaFin" name="fechaFin">
+                </div>
+                
+                <div class="filter-group">
+                    <label for="segmentoFilter">Segmento:</label>
+                    <select id="segmentoFilter" name="segmento">
+                        <option value="">Todos los segmentos</option>
+                        <option value="RESIDENCIAL">Residencial</option>
+                        <option value="COMERCIAL">Comercial</option>
+                        <option value="INDUSTRIAL">Industrial</option>
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button id="aplicarFiltros" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Aplicar Filtros
+                    </button>
+                    <button id="limpiarFiltros" class="btn btn-secondary">
+                        <i class="fas fa-times"></i> Limpiar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPI Metrics Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card primary">
+                <button class="info-button" data-info="tasa-general" title="Ver información de negocio">
+                    <i class="fas fa-info"></i>
+                </button>
+                <div class="metric-header">
+                    <h3>Valor Actual</h3>
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="valorActual">8.20</span>%
+                </div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i> +0.3% vs mes anterior
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <button class="info-button" data-info="tasa-general" title="Ver información de negocio">
+                    <i class="fas fa-info"></i>
+                </button>
+                <div class="metric-header">
+                    <h3>Facturas Atípicas</h3>
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="facturasAtipicas">--</span>
+                </div>
+                <div class="metric-subtitle">facturas con divergencia ≥30%</div>
+            </div>
+
+            <div class="metric-card">
+                <button class="info-button" data-info="tasa-general" title="Ver información de negocio">
+                    <i class="fas fa-info"></i>
+                </button>
+                <div class="metric-header">
+                    <h3>Facturas Normales</h3>
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="facturasNormales">--</span>
+                </div>
+                <div class="metric-subtitle">facturas con divergencia <30%</div>
+            </div>
+
+            <div class="metric-card">
+                <button class="info-button" data-info="tasa-general" title="Ver información de negocio">
+                    <i class="fas fa-info"></i>
+                </button>
+                <div class="metric-header">
+                    <h3>Desviación Meta</h3>
+                    <i class="fas fa-target"></i>
+                </div>
+                <div class="metric-value critical">
+                    <span id="desviacionMeta">4.1x</span>
+                </div>
+                <div class="metric-subtitle">veces sobre meta</div>
+            </div>
+        </section>
+
+        <!-- Analysis Charts -->
+        <section class="analysis-section">
+            <!-- Tendencia Temporal -->
+            <div class="chart-container full-width">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <h3><i class="fas fa-chart-line"></i> Tendencia Temporal - Últimos 12 Meses</h3>
+                        <p>Evolución del porcentaje de lecturas estimadas en el tiempo</p>
+                    </div>
+                    <button class="info-button" data-info="tendencia-temporal" title="¿Por qué es importante este análisis?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                    <div class="chart-controls">
+                        <button class="chart-btn active" data-period="12m">12M</button>
+                        <button class="chart-btn" data-period="6m">6M</button>
+                        <button class="chart-btn" data-period="3m">3M</button>
+                    </div>
+                </div>
+                <div class="chart-content">
+                    <canvas id="tendenciaChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis por Segmento -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-users"></i> Análisis por Segmento de Cliente</h3>
+                    <p>Distribución de lecturas estimadas por tipo de cliente</p>
+                    <button class="info-button" data-info="analisis-segmento" title="¿Por qué analizar por segmento?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="segmentoChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis por Marca -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-industry"></i> Análisis por Marca de Medidor</h3>
+                    <p>Rendimiento por fabricante de medidores</p>
+                    <button class="info-button" data-info="analisis-marca" title="¿Por qué analizar por marca?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="marcaChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis Geográfico -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Distribución Geográfica</h3>
+                    <p>Concentración de lecturas estimadas por ubicación</p>
+                    <button class="info-button" data-info="distribucion-geografica" title="¿Por qué el análisis geográfico?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="ubicacionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Comparativa Verificadas vs Estimadas -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-balance-scale"></i> Comparativa Global</h3>
+                    <p>Proporción general de lecturas verificadas vs estimadas</p>
+                    <button class="info-button" data-info="comparativa-global" title="¿Qué indica este balance?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="comparativaChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Patrones Temporales -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-clock"></i> Patrones por Día de la Semana</h3>
+                    <p>Análisis de cuando ocurren más lecturas estimadas</p>
+                    <button class="info-button" data-info="patrones-semanales" title="¿Por qué analizar por día?">
+                        <i class="fas fa-info"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="patronesChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistical Summary -->
+        <section class="statistics-section">
+            <div class="stats-header">
+                <h3><i class="fas fa-chart-bar"></i> Resumen Estadístico Detallado</h3>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Promedio Mensual</div>
+                    <div class="stat-value" id="promedioMensual">8.15%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Desviación Estándar</div>
+                    <div class="stat-value" id="desviacionEstandar">±1.2%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Tendencia</div>
+                    <div class="stat-value upward" id="tendencia">↗ Creciente</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Predicción 30 días</div>
+                    <div class="stat-value warning" id="prediccion">8.8%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Peor Segmento</div>
+                    <div class="stat-value" id="peorSegmento">Residencial</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Mejor Marca</div>
+                    <div class="stat-value" id="mejorMarca">Elster</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations -->
+        <section class="recommendations-section">
+            <div class="recommendations-header">
+                <h3><i class="fas fa-lightbulb"></i> Recomendaciones de Acción</h3>
+                <p>Acciones prioritarias para reducir el porcentaje de lecturas estimadas</p>
+            </div>
+            <div class="recommendations-grid">
+                <div class="recommendation-card high-priority">
+                    <div class="priority-badge">Alta Prioridad</div>
+                    <h4>Revisión de Medidores Problemáticos</h4>
+                    <p>Identificar y reemplazar medidores con alto porcentaje de estimaciones</p>
+                    <div class="action-items">
+                        <div class="action-item">• Auditar medidores con >15% estimaciones</div>
+                        <div class="action-item">• Programar mantenimiento preventivo</div>
+                        <div class="action-item">• Actualizar equipos obsoletos</div>
+                    </div>
+                </div>
+
+                <div class="recommendation-card medium-priority">
+                    <div class="priority-badge">Prioridad Media</div>
+                    <h4>Optimización de Rutas de Lectura</h4>
+                    <p>Mejorar la planificación y ejecución de rutas de lectura</p>
+                    <div class="action-items">
+                        <div class="action-item">• Revisar rutas en zonas problemáticas</div>
+                        <div class="action-item">• Capacitar personal de campo</div>
+                        <div class="action-item">• Implementar tecnología móvil</div>
+                    </div>
+                </div>
+
+                <div class="recommendation-card low-priority">
+                    <div class="priority-badge">Seguimiento</div>
+                    <h4>Monitoreo Continuo</h4>
+                    <p>Establecer alertas y controles automáticos</p>
+                    <div class="action-items">
+                        <div class="action-item">• Alertas automáticas >5% estimaciones</div>
+                        <div class="action-item">• Reportes semanales por segmento</div>
+                        <div class="action-item">• Dashboard en tiempo real</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Cargando análisis detallado...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/kpi1_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/kpi1_info_modals.js') }}"></script>
+</body>
+</html>

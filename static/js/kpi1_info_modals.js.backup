@@ -1,0 +1,553 @@
+// KPI 1 Information Modals - Business Intelligence Justifications
+// Sistema de información contextual para métricas y análisis estadísticos
+
+class KPI1InfoManager {
+    constructor() {
+        this.currentData = null;
+        this.init();
+    }
+
+    init() {
+        this.createModalContainer();
+        this.attachEventListeners();
+    }
+
+    createModalContainer() {
+        // Crear overlay para modales
+        const overlay = document.createElement('div');
+        overlay.className = 'info-modal-overlay';
+        overlay.id = 'infoModalOverlay';
+        overlay.innerHTML = '<div class="info-modal" id="infoModalContent"></div>';
+        document.body.appendChild(overlay);
+
+        // Click fuera del modal para cerrar
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                this.closeModal();
+            }
+        });
+    }
+
+    attachEventListeners() {
+        // Escuchar clics en botones de información
+        document.addEventListener('click', (e) => {
+            const infoBtn = e.target.closest('.info-button');
+            if (infoBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                const infoType = infoBtn.dataset.info;
+                this.showInfo(infoType);
+            }
+        });
+
+        // Cerrar con tecla ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeModal();
+            }
+        });
+    }
+
+    showInfo(infoType) {
+        const content = this.getInfoContent(infoType);
+        const modalContent = document.getElementById('infoModalContent');
+        
+        if (content) {
+            modalContent.innerHTML = content;
+            document.getElementById('infoModalOverlay').classList.add('active');
+            
+            // Agregar event listener al botón cerrar
+            const closeBtn = modalContent.querySelector('.info-modal-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.closeModal());
+            }
+        }
+    }
+
+    closeModal() {
+        document.getElementById('infoModalOverlay').classList.remove('active');
+    }
+
+    getInfoContent(infoType) {
+        const infoData = {
+            'porcentaje-general': {
+                title: 'Porcentaje de Lecturas Estimadas',
+                subtitle: 'Indicador Principal de Calidad de Facturación',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>Este KPI mide la <strong>calidad y precisión</strong> de las lecturas de medidores eléctricos. 
+                            Las lecturas estimadas ocurren cuando no es posible acceder físicamente al medidor, generando 
+                            facturación basada en consumos históricos proyectados.</p>
+                            <div class="info-highlight">
+                                <strong>Impacto Financiero:</strong> Un porcentaje alto de lecturas estimadas puede generar:
+                                <ul>
+                                    <li>Facturación inexacta que deriva en ajustes posteriores</li>
+                                    <li>Incremento en reclamos de clientes (30-40% relacionados a estimaciones)</li>
+                                    <li>Pérdidas por subfacturación o sobrefacturación</li>
+                                    <li>Deterioro de la imagen corporativa y satisfacción del cliente</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-calculator',
+                        title: 'Cálculo del Indicador',
+                        content: `
+                            <div class="info-formula">
+                                % Lecturas Estimadas = (Total Lecturas Estimadas / Total Lecturas) × 100
+                            </div>
+                            <p><strong>Meta establecida:</strong> ≤ 2.0%</p>
+                            <p><strong>Criterios de Estado:</strong></p>
+                            <ul>
+                                <li><span class="impact-indicator low">OK</span> ≤ 2.0% - Dentro de meta</li>
+                                <li><span class="impact-indicator medium">ALERTA</span> 2.1% - 4.0% - Requiere atención</li>
+                                <li><span class="impact-indicator high">CRÍTICO</span> > 4.0% - Acción inmediata</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        icon: 'fa-chart-line',
+                        title: 'Inteligencia de Negocio',
+                        content: `
+                            <p>Este indicador permite:</p>
+                            <ul>
+                                <li><strong>Identificar zonas problemáticas</strong> con accesibilidad limitada a medidores</li>
+                                <li><strong>Evaluar eficiencia operativa</strong> del personal de lectura</li>
+                                <li><strong>Planificar rutas optimizadas</strong> para reducir estimaciones</li>
+                                <li><strong>Detectar medidores defectuosos</strong> que requieren reemplazo</li>
+                                <li><strong>Mejorar satisfacción del cliente</strong> mediante facturación precisa</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        icon: 'fa-tasks',
+                        title: 'Acciones Recomendadas',
+                        content: `
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Plan de Acción Inmediato</span>
+                                </div>
+                                <ul>
+                                    <li>Auditar medidores con >15% de lecturas estimadas</li>
+                                    <li>Revisar rutas en zonas con mayor porcentaje de estimaciones</li>
+                                    <li>Capacitar personal en técnicas de acceso a medidores</li>
+                                    <li>Implementar notificaciones a clientes para facilitar acceso</li>
+                                    <li>Evaluar instalación de medidores con telemetría (AMI)</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-link',
+                        title: 'KPIs Relacionados',
+                        content: `
+                            <div class="related-kpis">
+                                <span class="related-kpi-badge">KPI 2: Precisión Facturación</span>
+                                <span class="related-kpi-badge">KPI 4: Morosidad</span>
+                                <span class="related-kpi-badge">KPI 5: Tasa de Reclamos</span>
+                            </div>
+                            <p style="margin-top: 15px; font-size: 13px; color: #64748b;">
+                                Click en los badges para ver la relación entre indicadores
+                            </p>
+                        `
+                    }
+                ]
+            },
+
+            'tendencia-temporal': {
+                title: 'Tendencia Temporal de Lecturas Estimadas',
+                subtitle: 'Análisis de Evolución Mensual',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>El análisis de la <strong>tendencia temporal</strong> permite identificar patrones estacionales 
+                            y variaciones en la calidad de lectura a lo largo del tiempo.</p>
+                            <div class="info-highlight">
+                                <strong>Por qué es importante:</strong>
+                                <ul>
+                                    <li><strong>Estacionalidad:</strong> Detectar meses con mayor dificultad (ej: temporada de lluvias)</li>
+                                    <li><strong>Efectividad de acciones:</strong> Evaluar impacto de mejoras implementadas</li>
+                                    <li><strong>Pronóstico:</strong> Anticipar problemas futuros basados en tendencias</li>
+                                    <li><strong>Presupuesto:</strong> Planificar recursos según comportamiento histórico</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-chart-line',
+                        title: 'Interpretación del Gráfico',
+                        content: `
+                            <p><strong>Elementos clave a analizar:</strong></p>
+                            <ul>
+                                <li><strong>Línea roja (Lecturas Estimadas):</strong> Tendencia real del porcentaje</li>
+                                <li><strong>Línea verde punteada (Meta 2.0%):</strong> Objetivo de calidad</li>
+                                <li><strong>Pendiente de la línea:</strong> ↗ Creciente (preocupante) | ↘ Decreciente (positivo)</li>
+                                <li><strong>Distancia a meta:</strong> Gap entre líneas indica urgencia de acción</li>
+                            </ul>
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-chart-area"></i>
+                                    <span>Patrones a Detectar</span>
+                                </div>
+                                <ul>
+                                    <li><strong>Picos estacionales:</strong> Identificar meses críticos recurrentes</li>
+                                    <li><strong>Tendencia sostenida:</strong> Alerta de problemas estructurales</li>
+                                    <li><strong>Mejoras abruptas:</strong> Validar efectividad de intervenciones</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-tasks',
+                        title: 'Acciones Basadas en Tendencia',
+                        content: `
+                            <p><strong>Si la tendencia es CRECIENTE:</strong></p>
+                            <ul>
+                                <li>Investigar causas raíz del deterioro</li>
+                                <li>Revisar cambios en procesos operativos</li>
+                                <li>Auditar zonas con mayor incremento</li>
+                            </ul>
+                            <p><strong>Si la tendencia es DECRECIENTE:</strong></p>
+                            <ul>
+                                <li>Documentar buenas prácticas implementadas</li>
+                                <li>Replicar estrategias exitosas en otras zonas</li>
+                                <li>Mantener monitoreo continuo</li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+
+            'analisis-segmento': {
+                title: 'Análisis por Segmento de Cliente',
+                subtitle: 'Distribución de Lecturas Estimadas por Tipo de Usuario',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>El análisis por <strong>segmento de cliente</strong> (Residencial, Comercial, Industrial) 
+                            es crítico porque cada tipo tiene diferentes:</p>
+                            <div class="info-highlight">
+                                <ul>
+                                    <li><strong>Patrones de acceso:</strong> Residencias vs locales comerciales</li>
+                                    <li><strong>Impacto financiero:</strong> Clientes industriales facturan más</li>
+                                    <li><strong>Nivel de reclamos:</strong> Clientes comerciales son más exigentes</li>
+                                    <li><strong>Requerimientos regulatorios:</strong> Mayor precisión en grandes consumidores</li>
+                                </ul>
+                            </div>
+                            <p><strong>Impacto de negocio por segmento:</strong></p>
+                            <ul>
+                                <li><span class="impact-indicator high">INDUSTRIAL</span> Alta prioridad - Mayor impacto económico</li>
+                                <li><span class="impact-indicator medium">COMERCIAL</span> Media prioridad - Mayor tasa de reclamos</li>
+                                <li><span class="impact-indicator low">RESIDENCIAL</span> Volumen - Representa el 70-80% de clientes</li>
+                            </ul>
+                        `
+                    },
+                    {
+                        icon: 'fa-chart-pie',
+                        title: 'Interpretación del Gráfico',
+                        content: `
+                            <p><strong>El gráfico de dona muestra la distribución proporcional:</strong></p>
+                            <ul>
+                                <li><strong>Tamaño del segmento:</strong> Porción visual indica contribución relativa</li>
+                                <li><strong>Colores diferenciados:</strong> Facilitan identificación rápida</li>
+                                <li><strong>Hover sobre segmentos:</strong> Muestra porcentaje exacto</li>
+                            </ul>
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-crosshairs"></i>
+                                    <span>Criterios de Priorización</span>
+                                </div>
+                                <p>Atender primero el segmento que cumple:</p>
+                                <ul>
+                                    <li>Mayor % de lecturas estimadas</li>
+                                    <li>Mayor impacto financiero total</li>
+                                    <li>Mayor tasa histórica de reclamos</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-tasks',
+                        title: 'Estrategias por Segmento',
+                        content: `
+                            <p><strong>RESIDENCIAL:</strong></p>
+                            <ul>
+                                <li>Campañas de sensibilización para facilitar acceso</li>
+                                <li>Horarios extendidos de lectura (fines de semana)</li>
+                                <li>Notificaciones SMS previas a lectura</li>
+                            </ul>
+                            <p><strong>COMERCIAL:</strong></p>
+                            <ul>
+                                <li>Coordinación con administradores de edificios</li>
+                                <li>Lecturas en horarios de apertura comercial</li>
+                                <li>Prioridad en instalación de medidores remotos</li>
+                            </ul>
+                            <p><strong>INDUSTRIAL:</strong></p>
+                            <ul>
+                                <li>Medidores con telemetría obligatoria</li>
+                                <li>Acuerdos con seguridad de planta</li>
+                                <li>Cero tolerancia a estimaciones</li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+
+            'analisis-marca': {
+                title: 'Análisis por Marca de Medidor',
+                subtitle: 'Rendimiento y Confiabilidad por Fabricante',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>El análisis por <strong>marca de medidor</strong> es fundamental para:</p>
+                            <div class="info-highlight">
+                                <ul>
+                                    <li><strong>Gestión de activos:</strong> Identificar equipos con mayor tasa de fallas</li>
+                                    <li><strong>Decisiones de compra:</strong> Evaluar proveedores para futuras adquisiciones</li>
+                                    <li><strong>Mantenimiento predictivo:</strong> Priorizar reemplazo de marcas problemáticas</li>
+                                    <li><strong>Optimización de costos:</strong> Balance entre precio y confiabilidad</li>
+                                </ul>
+                            </div>
+                            <p>Un medidor defectuoso o de baja calidad puede generar hasta <strong>40% de lecturas estimadas</strong>.</p>
+                        `
+                    },
+                    {
+                        icon: 'fa-chart-bar',
+                        title: 'Interpretación del Gráfico',
+                        content: `
+                            <p><strong>Las barras verticales representan:</strong></p>
+                            <ul>
+                                <li><strong>Altura:</strong> Porcentaje de lecturas estimadas por marca</li>
+                                <li><strong>Color:</strong> 
+                                    <span style="color: #10b981;">Verde</span> ≤ 5% (Excelente) | 
+                                    <span style="color: #f59e0b;">Amarillo</span> 5-10% (Aceptable) | 
+                                    <span style="color: #ef4444;">Rojo</span> > 10% (Problemático)
+                                </li>
+                            </ul>
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-tools"></i>
+                                    <span>Criterios de Evaluación</span>
+                                </div>
+                                <ul>
+                                    <li>Marcas en <strong>rojo</strong>: Programar reemplazo masivo</li>
+                                    <li>Marcas en <strong>amarillo</strong>: Auditoría y mantenimiento</li>
+                                    <li>Marcas en <strong>verde</strong>: Modelo a seguir en nuevas compras</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-cogs',
+                        title: 'Plan de Gestión de Activos',
+                        content: `
+                            <p><strong>Acciones inmediatas:</strong></p>
+                            <ul>
+                                <li>Suspender compras de marcas con >10% de estimaciones</li>
+                                <li>Crear plan de reemplazo escalonado (3-5 años)</li>
+                                <li>Negociar garantías extendidas con proveedores</li>
+                                <li>Documentar casos de falla para reclamos</li>
+                            </ul>
+                            <p><strong>Análisis de costo-beneficio:</strong></p>
+                            <ul>
+                                <li>Costo de reemplazo vs. pérdidas por subfacturación</li>
+                                <li>ROI de migración a medidores inteligentes</li>
+                                <li>Impacto en satisfacción del cliente</li>
+                            </ul>
+                        `
+                    }
+                ]
+            },
+
+            'distribucion-geografica': {
+                title: 'Distribución Geográfica',
+                subtitle: 'Análisis Territorial de Lecturas Estimadas',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>El análisis <strong>geográfico</strong> identifica zonas con mayores desafíos operativos:</p>
+                            <div class="info-highlight">
+                                <ul>
+                                    <li><strong>Accesibilidad:</strong> Zonas de difícil acceso o inseguras</li>
+                                    <li><strong>Infraestructura:</strong> Áreas con medidores de difícil lectura</li>
+                                    <li><strong>Recursos:</strong> Distribución de personal de campo</li>
+                                    <li><strong>Cultura del pago:</strong> Zonas con mayor morosidad correlacionada</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-map-marked-alt',
+                        title: 'Interpretación del Gráfico',
+                        content: `
+                            <p><strong>Barras horizontales permiten:</strong></p>
+                            <ul>
+                                <li><strong>Comparación rápida:</strong> Identificar zona más problemática</li>
+                                <li><strong>Priorización visual:</strong> Zonas en la parte superior requieren atención</li>
+                                <li><strong>Benchmarking:</strong> Comparar rendimiento entre zonas similares</li>
+                            </ul>
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-map"></i>
+                                    <span>Estrategia Territorial</span>
+                                </div>
+                                <ul>
+                                    <li>Asignar personal especializado a zonas críticas</li>
+                                    <li>Implementar rutas optimizadas con GPS</li>
+                                    <li>Evaluar instalación de medidores con telemetría</li>
+                                </ul>
+                            </div>
+                        `
+                    }
+                ]
+            },
+
+            'comparativa-global': {
+                title: 'Comparativa Global: Verificadas vs Estimadas',
+                subtitle: 'Balance General de Calidad de Lectura',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>Este gráfico proporciona una <strong>vista ejecutiva</strong> del balance global:</p>
+                            <div class="info-highlight">
+                                <p><strong>Interpretación inmediata:</strong></p>
+                                <ul>
+                                    <li><span style="color: #10b981;">Verde (Verificadas):</span> Debe ser ≥ 98%</li>
+                                    <li><span style="color: #ef4444;">Rojo (Estimadas):</span> Debe ser ≤ 2%</li>
+                                </ul>
+                            </div>
+                            <p>Una relación saludable indica operación eficiente y alta satisfacción del cliente.</p>
+                        `
+                    },
+                    {
+                        icon: 'fa-bullseye',
+                        title: 'Meta y Cumplimiento',
+                        content: `
+                            <p><strong>Objetivo corporativo:</strong> 98% verificadas / 2% estimadas</p>
+                            <div class="info-stats-grid">
+                                <div class="info-stat-card">
+                                    <div class="info-stat-label">Porción Verde</div>
+                                    <div class="info-stat-value">≥ 98%</div>
+                                </div>
+                                <div class="info-stat-card">
+                                    <div class="info-stat-label">Porción Roja</div>
+                                    <div class="info-stat-value">≤ 2%</div>
+                                </div>
+                            </div>
+                        `
+                    }
+                ]
+            },
+
+            'patrones-semanales': {
+                title: 'Patrones por Día de la Semana',
+                subtitle: 'Análisis de Comportamiento Operativo Semanal',
+                sections: [
+                    {
+                        icon: 'fa-lightbulb',
+                        title: 'Justificación de Negocio',
+                        content: `
+                            <p>El análisis de <strong>patrones semanales</strong> revela:</p>
+                            <div class="info-highlight">
+                                <ul>
+                                    <li><strong>Eficiencia operativa:</strong> Días con mejor rendimiento de lecturistas</li>
+                                    <li><strong>Accesibilidad:</strong> Días donde clientes facilitan más el acceso</li>
+                                    <li><strong>Planificación de rutas:</strong> Optimizar asignaciones por día</li>
+                                    <li><strong>Gestión de RRHH:</strong> Identificar necesidades de refuerzo</li>
+                                </ul>
+                            </div>
+                        `
+                    },
+                    {
+                        icon: 'fa-clock',
+                        title: 'Interpretación del Gráfico Radar',
+                        content: `
+                            <p><strong>El gráfico muestra:</strong></p>
+                            <ul>
+                                <li><strong>Forma ideal:</strong> Círculo pequeño cerca del centro (bajo %)</li>
+                                <li><strong>Picos hacia afuera:</strong> Días con mayores estimaciones</li>
+                                <li><strong>Patrones típicos:</strong>
+                                    <ul>
+                                        <li>Lunes/Viernes: Posible incremento por fines de semana</li>
+                                        <li>Sábado/Domingo: Puede mejorar (clientes en casa)</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        `
+                    },
+                    {
+                        icon: 'fa-tasks',
+                        title: 'Optimización Operativa',
+                        content: `
+                            <div class="info-actions">
+                                <div class="info-actions-title">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>Estrategias por Día</span>
+                                </div>
+                                <ul>
+                                    <li><strong>Días críticos:</strong> Asignar personal con más experiencia</li>
+                                    <li><strong>Días óptimos:</strong> Capacitar personal nuevo</li>
+                                    <li><strong>Fines de semana:</strong> Evaluar operación especial en zonas residenciales</li>
+                                </ul>
+                            </div>
+                        `
+                    }
+                ]
+            }
+        };
+
+        const info = infoData[infoType];
+        if (!info) return null;
+
+        let sectionsHTML = '';
+        info.sections.forEach(section => {
+            sectionsHTML += `
+                <div class="info-section">
+                    <div class="info-section-title">
+                        <i class="fas ${section.icon}"></i>
+                        <h3>${section.title}</h3>
+                    </div>
+                    <div class="info-section-content">
+                        ${section.content}
+                    </div>
+                </div>
+            `;
+        });
+
+        return `
+            <div class="info-modal-header">
+                <h2>${info.title}</h2>
+                <p class="subtitle">${info.subtitle}</p>
+                <button class="info-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-modal-body">
+                ${sectionsHTML}
+            </div>
+        `;
+    }
+
+    setCurrentData(data) {
+        this.currentData = data;
+    }
+}
+
+// Inicializar el gestor de información
+document.addEventListener('DOMContentLoaded', () => {
+    window.kpi1InfoManager = new KPI1InfoManager();
+});

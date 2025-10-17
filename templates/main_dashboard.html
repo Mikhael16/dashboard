@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard KPIs - Luz del Sur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-bolt"></i>
+            <h2>Luz del Sur</h2>
+        </div>
+        
+        <div class="nav-menu">
+            <a href="/" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Resumen General</span>
+            </a>
+            
+            <div class="nav-section">
+                <h3>KPIs Específicos</h3>
+                
+                <a href="/kpi1" class="nav-item kpi-nav">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>KPI 1: Lecturas Estimadas</span>
+                    <div class="kpi-status" id="nav-kpi1-status">--</div>
+                </a>
+                
+                <a href="/kpi2" class="nav-item kpi-nav">
+                    <i class="fas fa-battery-empty"></i>
+                    <span>KPI 2: Consumo Cero</span>
+                    <div class="kpi-status" id="nav-kpi2-status">--</div>
+                </a>
+                
+                <a href="/kpi3" class="nav-item kpi-nav">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>KPI 3: Diferencias</span>
+                    <div class="kpi-status" id="nav-kpi3-status">--</div>
+                </a>
+                
+                <a href="/kpi6" class="nav-item kpi-nav">
+                    <i class="fas fa-link"></i>
+                    <span>KPI 6: Continuidad</span>
+                    <div class="kpi-status" id="nav-kpi6-status">--</div>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="page-title">
+                    <h1>Dashboard General de KPIs</h1>
+                    <p>Monitor integral de detección de facturación atípica</p>
+                </div>
+                <div class="header-controls">
+                    <div class="last-update">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastUpdate">Cargando...</span>
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPIs Overview Grid -->
+        <section class="kpis-overview">
+            <div class="kpis-grid">
+                <!-- KPI 1 -->
+                <div class="kpi-card critical" data-kpi="kpi_1">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Lecturas Estimadas</h3>
+                            <div class="kpi-formula">% = (Estimadas / Total) × 100</div>
+                        </div>
+                        <div class="kpi-status-badge" id="status-badge-1">CRÍTICO</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="primary-metric">
+                            <span class="value" id="kpi1-value">0.00</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="meta-info">
+                            <span>Meta: ≤ 2.0%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-chart">
+                        <canvas id="kpi1-mini-chart"></canvas>
+                    </div>
+                    <a href="/kpi1" class="view-details">
+                        Ver análisis completo <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="kpi-card warning" data-kpi="kpi_2">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-battery-empty"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Consumo Cero</h3>
+                            <div class="kpi-formula">% = (Consumo = 0 / Total) × 100</div>
+                        </div>
+                        <div class="kpi-status-badge" id="status-badge-2">ALERTA</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="primary-metric">
+                            <span class="value" id="kpi2-value">0.00</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="meta-info">
+                            <span>Meta: ≤ 1.0%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-chart">
+                        <canvas id="kpi2-mini-chart"></canvas>
+                    </div>
+                    <a href="/kpi2" class="view-details">
+                        Ver análisis completo <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="kpi-card critical" data-kpi="kpi_3">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Diferencias Significativas</h3>
+                            <div class="kpi-formula">% = (|Teórico - Reportado| > 15%) / Total × 100</div>
+                        </div>
+                        <div class="kpi-status-badge" id="status-badge-3">CRÍTICO</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="primary-metric">
+                            <span class="value" id="kpi3-value">0.00</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="meta-info">
+                            <span>Meta: ≤ 5.0%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-chart">
+                        <canvas id="kpi3-mini-chart"></canvas>
+                    </div>
+                    <a href="/kpi3" class="view-details">
+                        Ver análisis completo <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- KPI 6 -->
+                <div class="kpi-card ok" data-kpi="kpi_6">
+                    <div class="kpi-header">
+                        <div class="kpi-icon">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <div class="kpi-info">
+                            <h3>Exactitud de Continuidad</h3>
+                            <div class="kpi-formula">% = (Lecturas Continuas / Total) × 100</div>
+                        </div>
+                        <div class="kpi-status-badge" id="status-badge-6">CRÍTICO</div>
+                    </div>
+                    <div class="kpi-metrics">
+                        <div class="primary-metric">
+                            <span class="value" id="kpi6-value">0.00</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="meta-info">
+                            <span>Meta: ≥ 99.0%</span>
+                        </div>
+                    </div>
+                    <div class="kpi-chart">
+                        <canvas id="kpi6-mini-chart"></canvas>
+                    </div>
+                    <a href="/kpi6" class="view-details">
+                        Ver análisis completo <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Statistics -->
+        <section class="summary-stats">
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalRegistros">0</h3>
+                        <p>Total de Registros</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="totalMedidores">0</h3>
+                        <p>Medidores Únicos</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="periodoAnalisis">N/A</h3>
+                        <p>Período de Análisis</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 id="alertasActivas">0</h3>
+                        <p>Alertas Activas</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Global Trends Chart -->
+        <section class="trends-section">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tendencias Generales - Últimos 12 Meses</h3>
+                    <p>Evolución temporal de todos los KPIs principales</p>
+                </div>
+                <div class="chart-content">
+                    <canvas id="globalTrendsChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Cargando datos del sistema...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main_dashboard.js') }}"></script>
+</body>
+</html>

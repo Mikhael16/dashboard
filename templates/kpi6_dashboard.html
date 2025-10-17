@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 6 - Exactitud de Continuidad | Luz del Sur Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/info_modals.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi6_custom.css') }}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #3b82f6;
+        }
+        
+        .metric-card.primary {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        
+        .metric-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+        
+        .status-success {
+            color: var(--success-color);
+        }
+        
+        .status-warning {
+            color: var(--warning-color);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-link fa-spin"></i>
+            <p>Cargando análisis de continuidad de lecturas...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-bolt"></i> Luz del Sur</h2>
+            <p>Analytics Dashboard</p>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard Principal</span>
+            </a>
+            <a href="/kpi1" class="sidebar-item">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>KPI 1 - Lecturas Estimadas</span>
+            </a>
+            <a href="/kpi2" class="sidebar-item">
+                <i class="fas fa-battery-empty"></i>
+                <span>KPI 2 - Consumo Cero</span>
+            </a>
+            <a href="/kpi3" class="sidebar-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>KPI 3 - Diferencias</span>
+            </a>
+            <a href="/kpi6" class="sidebar-item active">
+                <i class="fas fa-link"></i>
+                <span>KPI 6 - Continuidad</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="update-info">
+                <i class="fas fa-sync-alt"></i>
+                <span>Actualizado: <span id="lastUpdate">--:--</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- KPI Header -->
+        <div class="kpi-header">
+            <div class="kpi-title-section">
+                <div class="kpi-breadcrumb">
+                    <a href="/">Dashboard</a> 
+                    <i class="fas fa-chevron-right"></i>
+                    <span>KPI 6 - Exactitud de Continuidad</span>
+                </div>
+                <h1 class="kpi-title">
+                    <i class="fas fa-link"></i>
+                    Exactitud de Lecturas Iniciales (Continuidad)
+                </h1>
+                <p class="kpi-description">
+                    Porcentaje de casos donde la lectura inicial del período coincide con la lectura final del período anterior
+                </p>
+            </div>
+            
+            <div class="kpi-formula-section">
+                <div class="formula-card">
+                    <div class="formula-header">
+                        <i class="fas fa-calculator"></i>
+                        <span>Fórmula del KPI</span>
+                        <button class="info-btn" onclick="openModal('continuidad-lecturas')">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                    <div class="formula-content">
+                        <code>Exactitud (%) = (# casos con Continuidad OK / Total casos) × 100</code>
+                        <div class="formula-detail">
+                            <small>Continuidad OK: Lectura_Inicial(t) == Lectura_Final(t-1) ± 0.1</small>
+                        </div>
+                    </div>
+                    <div class="formula-meta">
+                        <span><strong>Meta:</strong> ≥ 99%</span>
+                        <span><strong>Frecuencia:</strong> Mensual</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métricas Principales -->
+        <div class="metrics-grid">
+            <!-- Métrica Principal -->
+            <div class="metric-card primary">
+                <h3><i class="fas fa-link"></i> Exactitud de Continuidad</h3>
+                <div class="metric-value" id="valorPrincipalKPI6">
+                    <span class="value">--</span>
+                    <span class="unit">%</span>
+                </div>
+                <div class="metric-meta">Meta: ≥ 99.0%</div>
+                <div class="metric-stats">
+                    <span>Casos OK: <strong id="casosOK">--</strong></span>
+                    <span>Errores: <strong id="casosError">--</strong></span>
+                </div>
+            </div>
+
+            <!-- Métrica Secundaria 1 -->
+            <div class="metric-card">
+                <h3><i class="fas fa-check-circle"></i> Estado de Meta</h3>
+                <div class="metric-value">
+                    <span id="estadoMeta" class="status-badge">--</span>
+                </div>
+                <div class="metric-meta">Total Casos: <strong id="totalCasos">--</strong></div>
+            </div>
+
+            <!-- Métrica Secundaria 2 -->
+            <div class="metric-card">
+                <h3><i class="fas fa-exclamation-triangle"></i> Error Promedio</h3>
+                <div class="metric-value">
+                    <span class="value" id="diferenciaPromedio">--</span>
+                    <span class="unit">kWh</span>
+                </div>
+                <div class="metric-meta">Máximo: <strong id="diferenciaMaxima">--</strong> kWh</div>
+            </div>
+
+            <!-- Métrica Secundaria 3 -->
+            <div class="metric-card">
+                <h3><i class="fas fa-chart-line"></i> Errores Críticos</h3>
+                <div class="metric-value">
+                    <span class="value" id="erroresCriticos">--</span>
+                    <span class="unit">casos</span>
+                </div>
+                <div class="metric-meta">Diferencia > 100 kWh</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="charts-section">
+            <!-- Fila 1 -->
+            <div class="charts-row">
+                <!-- Gráfico 1: Tendencia Mensual -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-line"></i> Tendencia Mensual</h3>
+                        <button class="info-btn" onclick="openModal('continuidad-lecturas')">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                    <canvas id="tendenciaChartKPI6"></canvas>
+                </div>
+
+                <!-- Gráfico 2: Distribución por Magnitud -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-bar"></i> Distribución por Magnitud de Error</h3>
+                    </div>
+                    <canvas id="distribucionChartKPI6"></canvas>
+                </div>
+            </div>
+
+            <!-- Fila 2 -->
+            <div class="charts-row">
+                <!-- Gráfico 3: Top 10 Medidores con Más Errores -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-list-ol"></i> Top 10 Medidores con Más Errores</h3>
+                    </div>
+                    <canvas id="topMedidoresChartKPI6"></canvas>
+                </div>
+
+                <!-- Gráfico 4: Exactitud por Marca -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-industry"></i> Exactitud por Marca de Medidor</h3>
+                    </div>
+                    <canvas id="marcaChartKPI6"></canvas>
+                </div>
+            </div>
+
+            <!-- Fila 3 -->
+            <div class="charts-row">
+                <!-- Gráfico 5: Distribución Geográfica -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-map-marker-alt"></i> Top 10 Zonas con Más Errores</h3>
+                    </div>
+                    <canvas id="geografiaChartKPI6"></canvas>
+                </div>
+
+                <!-- Gráfico 6: Evolución del Error Promedio -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-line"></i> Evolución del Error Promedio</h3>
+                    </div>
+                    <canvas id="evolucionChartKPI6"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights -->
+        <div class="insights-section">
+            <h2><i class="fas fa-lightbulb"></i> Insights y Recomendaciones</h2>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <i class="fas fa-info-circle"></i>
+                    <h3>Justificación del KPI</h3>
+                    <p>Valida que la lectura inicial de cada periodo coincida con la lectura final del periodo anterior, asegurando la integridad de los datos históricos.</p>
+                    <button class="btn-secondary" onclick="openModal('continuidad-lecturas')">Ver más</button>
+                </div>
+
+                <div class="insight-card">
+                    <i class="fas fa-search"></i>
+                    <h3>Interpretación</h3>
+                    <p><strong>99-100%:</strong> Excelente calidad de datos<br>
+                       <strong>97-98.9%:</strong> Requiere revisión<br>
+                       <strong>&lt;97%:</strong> Problemas serios en proceso</p>
+                </div>
+
+                <div class="insight-card">
+                    <i class="fas fa-wrench"></i>
+                    <h3>Plan de Acción</h3>
+                    <p>1. Revisar top 10 medidores con más errores<br>
+                       2. Validar cambios de medidor no documentados<br>
+                       3. Implementar validaciones automáticas en HES/MDM</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/kpi6_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/kpi6_info_modals.js') }}"></script>
+    
+    <script>
+        // Actualizar timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('lastUpdate').textContent = timeStr;
+        }
+        
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000);
+    </script>
+</body>
+</html>

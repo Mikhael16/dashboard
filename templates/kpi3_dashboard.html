@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 3 - Proporción de Lecturas Estimadas | Luz del Sur Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-chart-pie fa-spin"></i>
+            <p>Cargando análisis de lecturas estimadas...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-bolt"></i> Luz del Sur</h2>
+            <p>Analytics Dashboard</p>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard Principal</span>
+            </a>
+            <a href="/kpi1" class="sidebar-item">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>KPI 1 - Lecturas Estimadas</span>
+            </a>
+            <a href="/kpi2" class="sidebar-item">
+                <i class="fas fa-battery-empty"></i>
+                <span>KPI 2 - Consumo Cero</span>
+            </a>
+            <a href="/kpi3" class="sidebar-item active">
+                <i class="fas fa-chart-bar"></i>
+                <span>KPI 3 - Diferencias</span>
+            </a>
+            <a href="/kpi6" class="sidebar-item">
+                <i class="fas fa-link"></i>
+                <span>KPI 6 - Continuidad</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="update-info">
+                <i class="fas fa-sync-alt"></i>
+                <span>Actualizado: <span id="lastUpdate">--:--</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- KPI Header -->
+        <div class="kpi-header">
+            <div class="kpi-title-section">
+                <div class="kpi-breadcrumb">
+                    <a href="/">Dashboard</a> 
+                    <i class="fas fa-chevron-right"></i>
+                    <span>KPI 3 - Proporción de Lecturas Estimadas</span>
+                </div>
+                <h1 class="kpi-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Proporción de Facturas con Lectura Estimada
+                </h1>
+                <p class="kpi-description">
+                    Porcentaje de facturas emitidas sin lectura real del medidor (estimadas/imputadas)
+                </p>
+            </div>
+            
+            <div class="kpi-formula-section">
+                <div class="formula-card">
+                    <div class="formula-header">
+                        <i class="fas fa-calculator"></i>
+                        <span>Fórmula del KPI</span>
+                    </div>
+                    <div class="formula-content">
+                        <code>
+                            % Estimadas = (Facturas con Lectura Estimada / Total Facturas) × 100
+                        </code>
+                        <div class="formula-explanation">
+                            <p><strong>Criterios de Identificación:</strong></p>
+                            <ul>
+                                <li><strong>Medidor ficticio:</strong> Sin instalación física</li>
+                                <li><strong>Sin lectura en terreno:</strong> Acceso impedido</li>
+                                <li><strong>Sin lectura verificada:</strong> No pasó validación</li>
+                                <li><strong>Observaciones:</strong> Sistema marca como estimada</li>
+                                <li><strong>Meta:</strong> ≤ 5.0% mensual</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="kpi-status-card">
+                    <div class="status-header">
+                        <span>Estado Actual</span>
+                        <div class="status-badge" id="statusBadge">--</div>
+                    </div>
+                    <div class="current-value" id="currentValue">--</div>
+                    <div class="status-subtitle">Lecturas Estimadas</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métricas Principales -->
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-header">
+                    <h3><i class="fas fa-chart-pie"></i> Lecturas Estimadas</h3>
+                </div>
+                <div class="metric-value" id="valorPrincipalKPI3">
+                    <span class="value">--</span>
+                    <span class="unit">%</span>
+                </div>
+                <div class="metric-subtitle">Meta: ≤ 5.0%</div>
+                <div class="metric-comparison">
+                    <span class="estimadas" id="numEstimadas">Estimadas: --</span>
+                    <span class="reales" id="numReales">Reales: --</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Total Facturas</h3>
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="metric-value" id="totalFacturas">--</div>
+                <div class="metric-subtitle">registros analizados</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Estado Meta</h3>
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="metric-value" id="estadoMeta">--</div>
+                <div class="metric-subtitle" id="estadoMetaTexto">--</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Motivo Principal</h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-value" id="motivoPrincipal" style="font-size: 0.9rem;">--</div>
+                <div class="metric-subtitle">causa más frecuente</div>
+            </div>
+        </div>
+
+        <!-- Gráficos de Análisis -->
+        <div class="charts-grid">
+            <!-- Tendencia Mensual -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Evolución Mensual de Lecturas Estimadas</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('tendencia')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.downloadChart('tendencia')" title="Descargar gráfico">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tendenciaChartKPI3"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribución por Motivo -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Distribución por Motivo</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('motivos')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="motivosChartKPI3"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Ubicaciones -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Top 10 Zonas con Más Estimadas</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('ubicaciones')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="ubicacionesChartKPI3"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis por Marca -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-industry"></i> Análisis por Marca de Medidor</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('marca')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="marcaChartKPI3"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis por Contratista -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-users"></i> Top 10 Contratistas</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('contratista')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="contratistaChartKPI3"></canvas>
+                </div>
+            </div>
+
+            <!-- Patrones Semanales -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-calendar-week"></i> Patrones por Día de la Semana</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi3Dashboard.showChartInfo('patrones')" title="Información del gráfico">
+                            <i class="fas fa-info-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="patronesChartKPI3"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis Estadístico -->
+        <div class="analysis-section">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-area"></i> Análisis Detallado de Lecturas Estimadas</h2>
+                <p>Métricas avanzadas y análisis de causas raíz</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Zona Crítica</span>
+                    </div>
+                    <div class="stat-value" id="zonaCritica">--</div>
+                    <div class="stat-description">Mayor cantidad de estimadas</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-calendar-day"></i>
+                        <span>Día Más Problemático</span>
+                    </div>
+                    <div class="stat-value" id="diaMaxEstimadas">--</div>
+                    <div class="stat-description">Día con más lecturas estimadas</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-tools"></i>
+                        <span>Contratista Crítico</span>
+                    </div>
+                    <div class="stat-value" id="contratistaCritico">--</div>
+                    <div class="stat-description">Mayor % de estimadas</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Marca con Más Problemas</span>
+                    </div>
+                    <div class="stat-value" id="marcaProblematica">--</div>
+                    <div class="stat-description">Marca de medidor</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-percentage"></i>
+                        <span>Porcentaje Reales</span>
+                    </div>
+                    <div class="stat-value" id="porcentajeReales">--</div>
+                    <div class="stat-description">Lecturas reales exitosas</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Tendencia</span>
+                    </div>
+                    <div class="stat-value" id="tendenciaKPI3">--</div>
+                    <div class="stat-description">vs mes anterior</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Causas Raíz -->
+        <div class="summary-section">
+            <div class="section-header">
+                <h2><i class="fas fa-search"></i> Análisis de Causas Raíz</h2>
+                <p>Identificación y análisis de motivos de lecturas estimadas</p>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-card highlight">
+                    <div class="summary-header">
+                        <i class="fas fa-ban"></i>
+                        <span>Sin Lectura en Terreno</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="sinLecturaTerreno">--</span>
+                            <span class="metric-label">lecturas</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Causa:</span>
+                                <span class="detail-value">Acceso impedido al medidor</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Acción:</span>
+                                <span class="detail-value">Coordinar reintento lectura</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <i class="fas fa-robot"></i>
+                        <span>Medidor Ficticio</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="medidorFicticio">--</span>
+                            <span class="metric-label">medidores</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Causa:</span>
+                                <span class="detail-value">Sin instalación física</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card warning">
+                    <div class="summary-header">
+                        <i class="fas fa-clipboard-check"></i>
+                        <span>Sin Verificación</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="sinVerificacion">--</span>
+                            <span class="metric-label">lecturas</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Causa:</span>
+                                <span class="detail-value">No pasó validación de calidad</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendaciones -->
+        <div class="recommendations-section">
+            <div class="section-header">
+                <h2><i class="fas fa-lightbulb"></i> Recomendaciones y Acciones</h2>
+                <p>Estrategias para minimizar lecturas estimadas</p>
+            </div>
+            
+            <div class="recommendations-grid">
+                <div class="recommendation-card priority-high">
+                    <div class="recommendation-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span class="priority-label">Alta Prioridad</span>
+                    </div>
+                    <h4>Revisar Zonas con Alto Porcentaje de Estimadas</h4>
+                    <p>Identificar y resolver problemas de acceso en zonas críticas. Coordinar con clientes para facilitar la lectura de medidores.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Operaciones</span>
+                        <span class="action-tag">Atención al Cliente</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-medium">
+                    <div class="recommendation-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="priority-label">Prioridad Media</span>
+                    </div>
+                    <h4>Evaluación de Desempeño de Contratistas</h4>
+                    <p>Analizar y mejorar el desempeño de contratistas con alto porcentaje de lecturas estimadas mediante capacitación y supervisión.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Gestión</span>
+                        <span class="action-tag">Calidad</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-low">
+                    <div class="recommendation-header">
+                        <i class="fas fa-microchip"></i>
+                        <span class="priority-label">Seguimiento</span>
+                    </div>
+                    <h4>Implementar Medidores Inteligentes (AMI/AMR)</h4>
+                    <p>Evaluar la implementación de medidores con lectura remota en zonas con alto porcentaje de lecturas estimadas para mejorar la precisión.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Tecnología</span>
+                        <span class="action-tag">Inversión</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal de Información de Gráficos -->
+    <div id="chartInfoModal" class="info-modal" onclick="kpi3Dashboard.closeModal()">
+        <div class="info-modal-content" onclick="event.stopPropagation()">
+            <div class="info-modal-header">
+                <h3 id="modalTitle"><i class="fas fa-info-circle"></i> Información del Gráfico</h3>
+                <button class="close-modal-btn" onclick="kpi3Dashboard.closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="info-modal-body" id="modalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/kpi3_dashboard.js') }}"></script>
+    
+    <script>
+        // Actualizar timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-PE', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+        
+        // Actualizar cada minuto
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000);
+    </script>
+</body>
+</html>

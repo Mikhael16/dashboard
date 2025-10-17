@@ -1,0 +1,511 @@
+// KPI 2 Dashboard JavaScript - Consumo Cero
+class KPI2Dashboard {
+    constructor() {
+        this.charts = {};
+        this.analyticsData = null;
+        this.isLoading = false;
+        this.init();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.loadAnalyticsData();
+        this.initializeChartDefaults();
+    }
+
+    setupEventListeners() {
+        // Auto-refresh
+        setInterval(() => {
+            if (!document.hidden) {
+                this.loadAnalyticsData();
+            }
+        }, 300000); // 5 minutos
+    }
+
+    async loadAnalyticsData() {
+        if (this.isLoading) return;
+        
+        this.showLoading(true);
+        
+        try {
+            const response = await fetch('/api/kpi2/analytics');
+            const data = await response.json();
+
+            if (data.error) {
+                this.showError(data.error);
+                return;
+            }
+
+            this.analyticsData = data;
+            this.updateAllVisualization(data);
+            this.updateMetrics(data);
+            this.updateStatistics(data);
+
+        } catch (error) {
+            console.error('Error loading KPI 2 analytics:', error);
+            this.showError('Error cargando análisis de consumo cero');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
+    updateAllVisualization(data) {
+        this.createTendenciaChart(data.tendencia_temporal);
+        this.createSegmentoChart(data.analisis_segmento);
+        this.createConsumoChart(data.estadisticas_consumo);
+        this.createComparativaChart(data);
+        this.createPatronesChart();
+        this.updateInactiveSummary(data);
+    }
+
+    updateMetrics(data) {
+        // Actualizar métricas principales
+        document.getElementById('valorActual').textContent = data.porcentaje_general.toFixed(2);
+        document.getElementById('currentValue').textContent = data.porcentaje_general.toFixed(2);
+        
+        // Total lecturas cero
+        document.getElementById('totalLecturasCero').textContent = this.formatNumber(data.total_lecturas_cero);
+        
+        // Medidores inactivos
+        document.getElementById('medidoresInactivos').textContent = data.medidores_inactivos || 0;
+
+        // Estado vs meta
+        const estado = data.porcentaje_general <= 1.0 ? 'OK' : 'ALERTA';
+        document.getElementById('estadoMeta').textContent = estado;
+
+        // Desviación de meta
+        if (data.porcentaje_general <= 1.0) {
+            const margen = (1.0 - data.porcentaje_general).toFixed(2);
+            document.getElementById('deviation').textContent = `${margen}% bajo meta`;
+        } else {
+            const exceso = (data.porcentaje_general - 1.0).toFixed(2);
+            document.getElementById('deviation').textContent = `+${exceso}% sobre meta`;
+        }
+
+        // Actualizar estados visuales
+        this.updateStatus(data.porcentaje_general);
+    }
+
+    updateStatus(valor) {
+        let estado, className;
+        
+        if (valor <= 1.0) {
+            estado = 'OK';
+            className = 'ok';
+        } else if (valor <= 2.0) {
+            estado = 'ALERTA';
+            className = 'warning';
+        } else {
+            estado = 'CRÍTICO';
+            className = 'critical';
+        }
+
+        // Actualizar badges de estado
+        document.querySelectorAll('.status-badge, #statusBadge').forEach(badge => {
+            badge.textContent = estado;
+            badge.className = `status-badge ${className}`;
+        });
+
+        // Actualizar clases de valor
+        document.querySelectorAll('.current-value').forEach(element => {
+            element.className = `current-value ${className}`;
+        });
+    }
+
+    updateStatistics(data) {
+        // Actualizar estadísticas
+        const tendencia = data.tendencia_temporal || [];
+        
+        if (tendencia.length >= 2) {
+            const valores = tendencia.map(t => t.valor);
+            const promedio = valores.reduce((sum, val) => sum + val, 0) / valores.length;
+            
+            document.getElementById('promedioMensual').textContent = promedio.toFixed(2) + '%';
+            
+            // Calcular variabilidad
+            const varianza = valores.reduce((sum, val) => sum + Math.pow(val - promedio, 2), 0) / valores.length;
+            const desviacion = Math.sqrt(varianza);
+            document.getElementById('variabilidad').textContent = '±' + desviacion.toFixed(2) + '%';
+            
+            // Tendencia
+            const primero = valores[0];
+            const ultimo = valores[valores.length - 1];
+            const cambio = ultimo - primero;
+            
+            const tendenciaElement = document.getElementById('tendencia');
+            if (cambio < -0.05) {
+                tendenciaElement.textContent = '↘ Mejorando';
+                tendenciaElement.className = 'stat-value downward';
+            } else if (cambio > 0.05) {
+                tendenciaElement.textContent = '↗ Empeorando';
+                tendenciaElement.className = 'stat-value upward';
+            } else {
+                tendenciaElement.textContent = '→ Estable';
+                tendenciaElement.className = 'stat-value';
+            }
+        }
+
+        // Estadísticas de consumo
+        if (data.estadisticas_consumo) {
+            document.getElementById('consumoPromedio').textContent = 
+                data.estadisticas_consumo.promedio.toFixed(1) + ' kWh';
+        }
+
+        // Análisis de segmentos
+        if (data.analisis_segmento) {
+            const segmentos = Object.entries(data.analisis_segmento);
+            const peor = segmentos.reduce((max, current) => 
+                current[1] > max[1] ? current : max
+            );
+            document.getElementById('peorSegmento').textContent = peor[0];
+        }
+
+        // Estado general
+        const estadoGeneral = data.porcentaje_general <= 0.5 ? 'Excelente' : 
+                            data.porcentaje_general <= 1.0 ? 'Saludable' : 'Requiere Atención';
+        document.getElementById('estadoGeneral').textContent = estadoGeneral;
+    }
+
+    updateInactiveSummary(data) {
+        document.getElementById('inactivosCount').textContent = data.medidores_inactivos || 0;
+        document.getElementById('promedioConsecutivos').textContent = '3.2'; // Simulado
+        document.getElementById('maxConsecutivos').textContent = '7'; // Simulado
+    }
+
+    createTendenciaChart(tendenciaData) {
+        const ctx = document.getElementById('tendenciaChart');
+        if (!ctx || !tendenciaData) return;
+
+        if (this.charts.tendencia) {
+            this.charts.tendencia.destroy();
+        }
+
+        const labels = tendenciaData.map(item => item.mes);
+        const values = tendenciaData.map(item => item.valor);
+
+        this.charts.tendencia = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Porcentaje Consumo Cero',
+                    data: values,
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#f59e0b',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }, {
+                    label: 'Meta (1.0%)',
+                    data: new Array(labels.length).fill(1.0),
+                    borderColor: '#10b981',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { usePointStyle: true, padding: 20 }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: '#f59e0b',
+                        borderWidth: 1,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' }
+                    }
+                }
+            }
+        });
+    }
+
+    createSegmentoChart(segmentoData) {
+        const ctx = document.getElementById('segmentoChart');
+        if (!ctx || !segmentoData) return;
+
+        if (this.charts.segmento) {
+            this.charts.segmento.destroy();
+        }
+
+        const labels = Object.keys(segmentoData);
+        const values = Object.values(segmentoData);
+
+        this.charts.segmento = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Consumo Cero por Segmento (%)',
+                    data: values,
+                    backgroundColor: values.map(val => 
+                        val > 1.5 ? '#ef4444' : val > 1.0 ? '#f59e0b' : '#10b981'
+                    ),
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    createConsumoChart(consumoStats) {
+        const ctx = document.getElementById('consumoChart');
+        if (!ctx || !consumoStats) return;
+
+        if (this.charts.consumo) {
+            this.charts.consumo.destroy();
+        }
+
+        // Crear distribución simulada basada en las estadísticas
+        const labels = ['0 kWh', '0-50 kWh', '50-100 kWh', '100-200 kWh', '200-500 kWh', '500+ kWh'];
+        const values = [5.2, 25.8, 35.4, 22.1, 9.3, 2.2]; // Simulado
+
+        this.charts.consumo = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: [
+                        '#ef4444', '#f59e0b', '#3b82f6', 
+                        '#8b5cf6', '#10b981', '#6b7280'
+                    ],
+                    borderWidth: 3,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 15, usePointStyle: true }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+    }
+
+    createComparativaChart(data) {
+        const ctx = document.getElementById('comparativaChart');
+        if (!ctx) return;
+
+        if (this.charts.comparativa) {
+            this.charts.comparativa.destroy();
+        }
+
+        const totalLecturas = data.total_lecturas_cero + 100000; // Simulado
+        const pctCero = data.porcentaje_general;
+        const pctNormal = 100 - pctCero;
+
+        this.charts.comparativa = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Lecturas Normales', 'Lecturas Cero'],
+                datasets: [{
+                    data: [pctNormal, pctCero],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 4,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { padding: 20, usePointStyle: true }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        cornerRadius: 8
+                    }
+                }
+            }
+        });
+    }
+
+    createPatronesChart() {
+        const ctx = document.getElementById('patronesChart');
+        if (!ctx) return;
+
+        if (this.charts.patrones) {
+            this.charts.patrones.destroy();
+        }
+
+        // Simulación de patrones por día del mes
+        const days = Array.from({length: 31}, (_, i) => `${i + 1}`);
+        const values = days.map(() => Math.random() * 2 + 0.5); // Valores simulados
+
+        this.charts.patrones = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: days,
+                datasets: [{
+                    label: '% Consumo Cero',
+                    data: values,
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toFixed(1) + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { color: 'rgba(226, 232, 240, 0.5)' },
+                        title: {
+                            display: true,
+                            text: 'Día del Mes'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    initializeChartDefaults() {
+        Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        Chart.defaults.font.size = 12;
+        Chart.defaults.color = '#64748b';
+    }
+
+    // Utility functions
+    formatNumber(num) {
+        if (num >= 1000000) {
+            return (num / 1000000).toFixed(1) + 'M';
+        } else if (num >= 1000) {
+            return (num / 1000).toFixed(1) + 'K';
+        }
+        return num.toLocaleString();
+    }
+
+    showLoading(show) {
+        const overlay = document.getElementById('loadingOverlay');
+        if (show) {
+            overlay.classList.remove('hidden');
+            this.isLoading = true;
+        } else {
+            overlay.classList.add('hidden');
+            this.isLoading = false;
+        }
+    }
+
+    showError(message) {
+        console.error('KPI 2 Error:', message);
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.innerHTML = `
+            <div class="error-content">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #fee2e2;
+            color: #7f1d1d;
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #ef4444;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            max-width: 400px;
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => {
+            if (errorDiv.parentElement) {
+                errorDiv.remove();
+            }
+        }, 5000);
+    }
+}
+
+// Inicializar el dashboard KPI 2
+document.addEventListener('DOMContentLoaded', () => {
+    window.kpi2Dashboard = new KPI2Dashboard();
+});

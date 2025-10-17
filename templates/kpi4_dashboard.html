@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 4 - Morosidad por Facturación Atípica | Luz del Sur Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-exclamation-triangle fa-spin"></i>
+            <p>Cargando análisis de morosidad...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-bolt"></i> Luz del Sur</h2>
+            <p>Analytics Dashboard</p>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard Principal</span>
+            </a>
+            <a href="/kpi1" class="sidebar-item">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>KPI 1 - Facturación Atípica</span>
+            </a>
+            <a href="/kpi2" class="sidebar-item">
+                <i class="fas fa-bullseye"></i>
+                <span>KPI 2 - Precisión Energética</span>
+            </a>
+            <a href="/kpi3" class="sidebar-item">
+                <i class="fas fa-calculator"></i>
+                <span>KPI 3 - Lecturas Estimadas</span>
+            </a>
+            <a href="/kpi4" class="sidebar-item active">
+                <i class="fas fa-user-slash"></i>
+                <span>KPI 4 - Morosidad Atípica</span>
+            </a>
+            <a href="/kpi5" class="sidebar-item">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>KPI 5 - Reclamos</span>
+            </a>
+            <a href="/kpi6" class="sidebar-item">
+                <i class="fas fa-check-circle"></i>
+                <span>KPI 6 - Exactitud Lecturas</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="update-info">
+                <i class="fas fa-sync-alt"></i>
+                <span>Actualizado: <span id="lastUpdate">--:--</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- KPI Header -->
+        <div class="kpi-header">
+            <div class="kpi-title-section">
+                <div class="kpi-breadcrumb">
+                    <a href="/">Dashboard</a> 
+                    <i class="fas fa-chevron-right"></i>
+                    <span>KPI 4 - Morosidad por Facturación Atípica</span>
+                </div>
+                <h1 class="kpi-title">
+                    <i class="fas fa-user-slash"></i>
+                    Análisis de Morosidad Asociada a Facturación Atípica
+                </h1>
+                <p class="kpi-description">
+                    Identificación de clientes con divergencias altas y análisis de patrones de riesgo de morosidad
+                </p>
+            </div>
+            
+            <div class="kpi-formula-section">
+                <div class="formula-card">
+                    <div class="formula-header">
+                        <i class="fas fa-calculator"></i>
+                        <span>Fórmula del KPI</span>
+                    </div>
+                    <div class="formula-content">
+                        <code>
+                            Morosidad_Atípica (%) = (Morosos_en_Grupo_Atípico / Total_Grupo_Atípico) × 100
+                        </code>
+                        <div class="formula-explanation">
+                            <p><strong>Donde:</strong></p>
+                            <ul>
+                                <li><strong>Grupo Atípico:</strong> Medidores con divergencia ≥ 30%</li>
+                                <li><strong>Divergencia:</strong> |consumo_reportado - consumo_teorico| / consumo_teorico</li>
+                                <li><strong>Meta:</strong> Mantener morosidad atípica < 15%</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="kpi-status-card">
+                    <div class="status-header">
+                        <span>Estado Actual</span>
+                        <div class="status-badge" id="statusBadge">--</div>
+                    </div>
+                    <div class="current-value" id="currentValue">--</div>
+                    <div class="status-subtitle">Morosidad en Grupo Atípico</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-section">
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="fechaInicio">Fecha Inicio:</label>
+                    <input type="date" id="fechaInicio" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="fechaFin">Fecha Fin:</label>
+                    <input type="date" id="fechaFin" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="segmentoFilter">Segmento:</label>
+                    <select id="segmentoFilter" class="filter-select">
+                        <option value="">Todos los segmentos</option>
+                        <option value="RESIDENCIAL">Residencial</option>
+                        <option value="COMERCIAL">Comercial</option>
+                        <option value="INDUSTRIAL">Industrial</option>
+                    </select>
+                </div>
+                <button class="filter-btn" onclick="kpi4Dashboard.aplicarFiltros()">
+                    <i class="fas fa-filter"></i> Aplicar Filtros
+                </button>
+                <button class="filter-btn secondary" onclick="kpi4Dashboard.limpiarFiltros()">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Métricas Principales -->
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-header">
+                    <h3>Morosidad Atípica</h3>
+                    <i class="fas fa-user-slash"></i>
+                </div>
+                <div class="metric-value" id="morosidadAtipica">--</div>
+                <div class="metric-subtitle">% en grupo de alta divergencia</div>
+                <div class="metric-trend" id="trendIndicator">
+                    <span class="trend-text">-- tendencia</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Medidores Atípicos</h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-value" id="medidoresAtipicos">--</div>
+                <div class="metric-subtitle">divergencia ≥ 30%</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Riesgo Promedio</h3>
+                    <i class="fas fa-chart-bar"></i>
+                </div>
+                <div class="metric-value" id="riesgoPromedio">--</div>
+                <div class="metric-subtitle">% probabilidad de morosidad</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Estado vs Meta</h3>
+                    <i class="fas fa-target"></i>
+                </div>
+                <div class="metric-value" id="estadoMeta">--</div>
+                <div class="metric-subtitle" id="deviationText">-- desviación</div>
+            </div>
+        </div>
+
+        <!-- Gráficos de Análisis -->
+        <div class="charts-grid">
+            <!-- Análisis de Riesgo por Segmento -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3><i class="fas fa-users"></i> Análisis de Riesgo por Segmento</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi4Dashboard.downloadChart('riesgo')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="chart-action-btn" onclick="kpi4Dashboard.refreshChart('riesgo')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="riesgoSegmentoChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribución de Consumos por Riesgo -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Distribución por Riesgo</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="distribucionRiesgoChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Tendencia de Morosidad Atípica -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tendencia Temporal</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tendenciaMorosidadChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis de Correlación Divergencia-Morosidad -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-project-diagram"></i> Correlación Divergencia-Riesgo</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="correlacionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Patrones de Consumo Alto Riesgo -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-fire"></i> Patrones Alto Riesgo</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="patronesAltoRiesgoChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis Estadístico -->
+        <div class="analysis-section">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-area"></i> Análisis Estadístico de Riesgo</h2>
+                <p>Métricas avanzadas para evaluación de riesgo crediticio asociado a facturación atípica</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-percentage"></i>
+                        <span>Tasa Morosidad Global</span>
+                    </div>
+                    <div class="stat-value" id="tasaMorosidadGlobal">--</div>
+                    <div class="stat-description">Todos los segmentos</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Factor de Riesgo</span>
+                    </div>
+                    <div class="stat-value" id="factorRiesgo">--</div>
+                    <div class="stat-description">Atípico vs Normal</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Concentración Riesgo</span>
+                    </div>
+                    <div class="stat-value" id="concentracionRiesgo">--</div>
+                    <div class="stat-description">Top 20% medidores</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span>Volatilidad</span>
+                    </div>
+                    <div class="stat-value" id="volatilidadRiesgo">--</div>
+                    <div class="stat-description">Desviación estándar</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-bullseye"></i>
+                        <span>Precisión Modelo</span>
+                    </div>
+                    <div class="stat-value" id="precisionModelo">--</div>
+                    <div class="stat-description">Capacidad predictiva</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Índice Protección</span>
+                    </div>
+                    <div class="stat-value" id="indiceProteccion">--</div>
+                    <div class="stat-description">Cobertura de riesgo</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Alto Riesgo -->
+        <div class="summary-section">
+            <div class="section-header">
+                <h2><i class="fas fa-shield-alt"></i> Análisis de Clientes Alto Riesgo</h2>
+                <p>Identificación y características de medidores con mayor probabilidad de morosidad</p>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-card critical">
+                    <div class="summary-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Alto Riesgo</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="altoRiesgoCount">--</span>
+                            <span class="metric-label">medidores críticos</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Divergencia promedio:</span>
+                                <span class="detail-value" id="divergenciaAltoRiesgo">--%</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Morosidad estimada:</span>
+                                <span class="detail-value" id="morosidadAltoRiesgo">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card warning">
+                    <div class="summary-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Riesgo Moderado</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="moderadoRiesgoCount">--</span>
+                            <span class="metric-label">medidores en observación</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Divergencia promedio:</span>
+                                <span class="detail-value" id="divergenciaModerado">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card success">
+                    <div class="summary-header">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Bajo Riesgo</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="bajoRiesgoCount">--</span>
+                            <span class="metric-label">medidores normales</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Divergencia promedio:</span>
+                                <span class="detail-value" id="divergenciaBajo">--%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendaciones -->
+        <div class="recommendations-section">
+            <div class="section-header">
+                <h2><i class="fas fa-lightbulb"></i> Recomendaciones Estratégicas</h2>
+                <p>Acciones para mitigar riesgo de morosidad en facturación atípica</p>
+            </div>
+            
+            <div class="recommendations-grid">
+                <div class="recommendation-card priority-high">
+                    <div class="recommendation-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span class="priority-label">Alta Prioridad</span>
+                    </div>
+                    <h4>Monitoreo Proactivo de Alto Riesgo</h4>
+                    <p>Implementar sistema de alertas tempranas para medidores con divergencias superiores al 30% y establecer protocolo de verificación inmediata.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Alertas</span>
+                        <span class="action-tag">Verificación</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-medium">
+                    <div class="recommendation-header">
+                        <i class="fas fa-user-check"></i>
+                        <span class="priority-label">Prioridad Media</span>
+                    </div>
+                    <h4>Programa de Atención Diferenciada</h4>
+                    <p>Crear programa especial de atención para clientes en grupo atípico con facilidades de pago y verificación técnica especializada.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Atención</span>
+                        <span class="action-tag">Facilidades</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-low">
+                    <div class="recommendation-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="priority-label">Seguimiento</span>
+                    </div>
+                    <h4>Análisis Predictivo de Morosidad</h4>
+                    <p>Desarrollar modelo predictivo que combine patrones de facturación atípica con historial de pagos para identificar riesgo temprano.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Modelo</span>
+                        <span class="action-tag">Predicción</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/kpi4_dashboard.js') }}"></script>
+    
+    <script>
+        // Actualizar timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-PE', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+        
+        // Actualizar cada minuto
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000);
+    </script>
+</body>
+</html>

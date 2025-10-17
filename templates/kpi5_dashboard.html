@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 5 - Tasa de Reclamos por Cobro Excesivo | Luz del Sur Dashboard</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner">
+            <i class="fas fa-exclamation-triangle fa-spin"></i>
+            <p>Cargando análisis de reclamos...</p>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-bolt"></i> Luz del Sur</h2>
+            <p>Analytics Dashboard</p>
+        </div>
+        
+        <div class="sidebar-menu">
+            <a href="/" class="sidebar-item">
+                <i class="fas fa-home"></i>
+                <span>Dashboard Principal</span>
+            </a>
+            <a href="/kpi1" class="sidebar-item">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>KPI 1 - Facturación Atípica</span>
+            </a>
+            <a href="/kpi2" class="sidebar-item">
+                <i class="fas fa-bullseye"></i>
+                <span>KPI 2 - Precisión Energética</span>
+            </a>
+            <a href="/kpi3" class="sidebar-item">
+                <i class="fas fa-calculator"></i>
+                <span>KPI 3 - Lecturas Estimadas</span>
+            </a>
+            <a href="/kpi4" class="sidebar-item">
+                <i class="fas fa-user-slash"></i>
+                <span>KPI 4 - Morosidad Atípica</span>
+            </a>
+            <a href="/kpi5" class="sidebar-item active">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>KPI 5 - Reclamos</span>
+            </a>
+            <a href="/kpi6" class="sidebar-item">
+                <i class="fas fa-check-circle"></i>
+                <span>KPI 6 - Exactitud Lecturas</span>
+            </a>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="update-info">
+                <i class="fas fa-sync-alt"></i>
+                <span>Actualizado: <span id="lastUpdate">--:--</span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- KPI Header -->
+        <div class="kpi-header">
+            <div class="kpi-title-section">
+                <div class="kpi-breadcrumb">
+                    <a href="/">Dashboard</a> 
+                    <i class="fas fa-chevron-right"></i>
+                    <span>KPI 5 - Tasa de Reclamos por Cobro Excesivo</span>
+                </div>
+                <h1 class="kpi-title">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Análisis de Tasa de Reclamos por Cobro Excesivo
+                </h1>
+                <p class="kpi-description">
+                    Monitoreo de eventos tipo reclamo y análisis de tendencias de insatisfacción por facturación
+                </p>
+            </div>
+            
+            <div class="kpi-formula-section">
+                <div class="formula-card">
+                    <div class="formula-header">
+                        <i class="fas fa-calculator"></i>
+                        <span>Fórmula del KPI</span>
+                    </div>
+                    <div class="formula-content">
+                        <code>
+                            Tasa_Reclamos (‰) = (Número_de_Reclamos / Número_Total_de_Registros) × 1000
+                        </code>
+                        <div class="formula-explanation">
+                            <p><strong>Donde:</strong></p>
+                            <ul>
+                                <li><strong>Reclamos:</strong> Eventos tipo 'R' en el sistema</li>
+                                <li><strong>Registros totales:</strong> Todas las lecturas procesadas</li>
+                                <li><strong>Meta:</strong> Mantener tasa < 5 reclamos por cada 1000 registros</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="kpi-status-card">
+                    <div class="status-header">
+                        <span>Estado Actual</span>
+                        <div class="status-badge" id="statusBadge">--</div>
+                    </div>
+                    <div class="current-value" id="currentValue">--</div>
+                    <div class="status-subtitle">Reclamos por mil</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-section">
+            <div class="filters-container">
+                <div class="filter-group">
+                    <label for="fechaInicio">Fecha Inicio:</label>
+                    <input type="date" id="fechaInicio" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="fechaFin">Fecha Fin:</label>
+                    <input type="date" id="fechaFin" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="segmentoFilter">Segmento:</label>
+                    <select id="segmentoFilter" class="filter-select">
+                        <option value="">Todos los segmentos</option>
+                        <option value="RESIDENCIAL">Residencial</option>
+                        <option value="COMERCIAL">Comercial</option>
+                        <option value="INDUSTRIAL">Industrial</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="ubicacionFilter">Ubicación:</label>
+                    <select id="ubicacionFilter" class="filter-select">
+                        <option value="">Todas las ubicaciones</option>
+                    </select>
+                </div>
+                <button class="filter-btn" onclick="kpi5Dashboard.aplicarFiltros()">
+                    <i class="fas fa-filter"></i> Aplicar Filtros
+                </button>
+                <button class="filter-btn secondary" onclick="kpi5Dashboard.limpiarFiltros()">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Métricas Principales -->
+        <div class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-header">
+                    <h3>Tasa de Reclamos</h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-value" id="tasaReclamos">--</div>
+                <div class="metric-subtitle">por cada 1000 registros</div>
+                <div class="metric-trend" id="trendIndicator">
+                    <span class="trend-text">-- tendencia</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Total Reclamos</h3>
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="metric-value" id="totalReclamos">--</div>
+                <div class="metric-subtitle">eventos registrados</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Reclamos Mensuales</h3>
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="metric-value" id="reclamosMensuales">--</div>
+                <div class="metric-subtitle">promedio por mes</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Estado vs Meta</h3>
+                    <i class="fas fa-target"></i>
+                </div>
+                <div class="metric-value" id="estadoMeta">--</div>
+                <div class="metric-subtitle" id="deviationText">-- desviación</div>
+            </div>
+        </div>
+
+        <!-- Gráficos de Análisis -->
+        <div class="charts-grid">
+            <!-- Tendencia Mensual de Reclamos -->
+            <div class="chart-card full-width">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tendencia Mensual de Reclamos</h3>
+                    <div class="chart-actions">
+                        <button class="chart-action-btn" onclick="kpi5Dashboard.downloadChart('tendencia')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="chart-action-btn" onclick="kpi5Dashboard.refreshChart('tendencia')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tendenciaReclamosChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Reclamos por Segmento -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-users"></i> Reclamos por Segmento</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="segmentoReclamosChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribución por Ubicación -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-map-marker-alt"></i> Reclamos por Ubicación</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="ubicacionReclamosChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribución de Eventos -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-pie"></i> Distribución de Eventos</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="distribucionEventosChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Patrones Semanales -->
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3><i class="fas fa-calendar-week"></i> Patrones por Día de la Semana</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="patronesSemanalChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Análisis Estadístico -->
+        <div class="analysis-section">
+            <div class="section-header">
+                <h2><i class="fas fa-chart-area"></i> Análisis Estadístico de Reclamos</h2>
+                <p>Métricas avanzadas para evaluación de patrones de reclamos y satisfacción del cliente</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-percentage"></i>
+                        <span>Tasa Promedio</span>
+                    </div>
+                    <div class="stat-value" id="tasaPromedio">--</div>
+                    <div class="stat-description">Últimos 12 meses</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>Pico Máximo</span>
+                    </div>
+                    <div class="stat-value" id="picoMaximo">--</div>
+                    <div class="stat-description">Mayor tasa mensual</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span>Variabilidad</span>
+                    </div>
+                    <div class="stat-value" id="variabilidad">--</div>
+                    <div class="stat-description">Desviación estándar</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Tendencia</span>
+                    </div>
+                    <div class="stat-value" id="tendenciaGeneral">--</div>
+                    <div class="stat-description">Dirección general</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Segmento Crítico</span>
+                    </div>
+                    <div class="stat-value" id="segmentoCritico">--</div>
+                    <div class="stat-description">Mayor tasa reclamos</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Estacionalidad</span>
+                    </div>
+                    <div class="stat-value" id="estacionalidad">--</div>
+                    <div class="stat-description">Patrón estacional</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Reclamos -->
+        <div class="summary-section">
+            <div class="section-header">
+                <h2><i class="fas fa-clipboard-list"></i> Resumen de Reclamos por Categoría</h2>
+                <p>Clasificación y análisis detallado de tipos de reclamos registrados</p>
+            </div>
+            
+            <div class="summary-grid">
+                <div class="summary-card critical">
+                    <div class="summary-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Reclamos Críticos</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="reclamosCriticos">--</span>
+                            <span class="metric-label">casos urgentes</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Tasa crítica:</span>
+                                <span class="detail-value" id="tasaCritica">--‰</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Tiempo promedio:</span>
+                                <span class="detail-value" id="tiempoCritico">-- horas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card warning">
+                    <div class="summary-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span>Reclamos Moderados</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="reclamosModerados">--</span>
+                            <span class="metric-label">casos estándar</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Tasa moderada:</span>
+                                <span class="detail-value" id="tasaModerada">--‰</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="summary-card info">
+                    <div class="summary-header">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Consultas Generales</span>
+                    </div>
+                    <div class="summary-content">
+                        <div class="summary-metric">
+                            <span class="metric-number" id="consultasGenerales">--</span>
+                            <span class="metric-label">casos informativos</span>
+                        </div>
+                        <div class="summary-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Tasa consultas:</span>
+                                <span class="detail-value" id="tasaConsultas">--‰</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recomendaciones -->
+        <div class="recommendations-section">
+            <div class="section-header">
+                <h2><i class="fas fa-lightbulb"></i> Recomendaciones de Mejora</h2>
+                <p>Estrategias para reducir la tasa de reclamos y mejorar la satisfacción del cliente</p>
+            </div>
+            
+            <div class="recommendations-grid">
+                <div class="recommendation-card priority-high">
+                    <div class="recommendation-header">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <span class="priority-label">Alta Prioridad</span>
+                    </div>
+                    <h4>Sistema de Alerta Temprana</h4>
+                    <p>Implementar alertas automáticas cuando la tasa de reclamos supere el umbral crítico en cualquier segmento o zona geográfica.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Alertas</span>
+                        <span class="action-tag">Monitoreo</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-medium">
+                    <div class="recommendation-header">
+                        <i class="fas fa-users"></i>
+                        <span class="priority-label">Prioridad Media</span>
+                    </div>
+                    <h4>Análisis de Causas Raíz</h4>
+                    <p>Realizar análisis detallado de los reclamos más frecuentes para identificar problemas sistémicos en facturación o atención al cliente.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Análisis</span>
+                        <span class="action-tag">Mejora</span>
+                    </div>
+                </div>
+
+                <div class="recommendation-card priority-low">
+                    <div class="recommendation-header">
+                        <i class="fas fa-chart-line"></i>
+                        <span class="priority-label">Seguimiento</span>
+                    </div>
+                    <h4>Dashboard de Satisfacción</h4>
+                    <p>Crear dashboard especializado en satisfacción del cliente que correlacione reclamos con otros indicadores de calidad del servicio.</p>
+                    <div class="recommendation-actions">
+                        <span class="action-tag">Dashboard</span>
+                        <span class="action-tag">Correlación</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/kpi5_dashboard.js') }}"></script>
+    
+    <script>
+        // Actualizar timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-PE', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+            document.getElementById('lastUpdate').textContent = timeString;
+        }
+        
+        // Actualizar cada minuto
+        updateTimestamp();
+        setInterval(updateTimestamp, 60000);
+    </script>
+</body>
+</html>

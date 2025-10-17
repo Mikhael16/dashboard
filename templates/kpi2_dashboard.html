@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI 2: Precisión de Facturación Energética - Luz del Sur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/kpi_specific.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-bolt"></i>
+            <h2>Luz del Sur</h2>
+        </div>
+        
+        <div class="nav-menu">
+            <a href="/" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Resumen General</span>
+            </a>
+            
+            <div class="nav-section">
+                <h3>KPIs Específicos</h3>
+                
+                <a href="/kpi1" class="nav-item kpi-nav">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>KPI 1: Lecturas Estimadas</span>
+                </a>
+                
+                <a href="/kpi2" class="nav-item kpi-nav active">
+                    <i class="fas fa-battery-empty"></i>
+                    <span>KPI 2: Consumo Cero</span>
+                    <div class="kpi-status" id="nav-kpi2-status">EVALUANDO</div>
+                </a>
+                
+                <a href="/kpi3" class="nav-item kpi-nav">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>KPI 3: Diferencias</span>
+                </a>
+                
+                <a href="/kpi6" class="nav-item kpi-nav">
+                    <i class="fas fa-link"></i>
+                    <span>KPI 6: Continuidad</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="kpi-header">
+            <div class="header-content">
+                <div class="kpi-title-section">
+                    <div class="kpi-icon-large success">
+                        <i class="fas fa-bullseye"></i>
+                    </div>
+                    <div class="kpi-title-info">
+                        <h1>KPI 2: Precisión de Facturación Energética</h1>
+                        <p>Exactitud agregada comparando energía facturada vs energía realmente medida</p>
+                        <div class="kpi-formula-display">
+                            <strong>Fórmula:</strong> <code>Precisión (%) = [1 − (Σ|Facturado − Medido| / ΣMedido)] × 100</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="kpi-status-section">
+                    <div class="current-value success" id="valorPrincipalKPI2">
+                        <span class="value">--</span>
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="status-info">
+                        <div class="status-badge ok" id="estadoCumplimiento">CARGANDO</div>
+                        <div class="meta-target">Meta: ≥ 98.0%</div>
+                        <div class="deviation" id="desviacionMeta">Calculando...</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI Metrics Grid -->
+        <section class="metrics-grid">
+            <div class="metric-card primary">
+                <div class="metric-header">
+                    <h3>Precisión Global</h3>
+                    <i class="fas fa-bullseye"></i>
+                </div>
+                <div class="metric-value success">
+                    <span id="precisionGlobal">--</span>%
+                </div>
+                <div class="metric-change positive">
+                    <i class="fas fa-arrow-up"></i> Meta: ≥98%
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Energía Total Medida</h3>
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="energiaTotalMedida">--</span>
+                </div>
+                <div class="metric-subtitle">kWh medidos</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Diferencia Total</h3>
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="diferenciaTotal">--</span>
+                </div>
+                <div class="metric-subtitle">kWh de diferencia</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-header">
+                    <h3>Error Promedio</h3>
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metric-value">
+                    <span id="errorPromedio">--</span>
+                </div>
+                <div class="metric-subtitle">kWh por factura</div>
+            </div>
+        </section>
+
+        <!-- Analysis Charts -->
+        <section class="analysis-section">
+            <!-- Tendencia Temporal -->
+            <div class="chart-container full-width">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <h3><i class="fas fa-chart-line"></i> Evolución de Precisión</h3>
+                        <p>Tendencia mensual de precisión de facturación energética</p>
+                    </div>
+                    <button class="info-btn" onclick="mostrarInfoModal('tendencia')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="tendenciaChartKPI2"></canvas>
+                </div>
+            </div>
+
+            <!-- Análisis por Segmento -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-users"></i> Precisión por Segmento</h3>
+                    <p>Precisión por tipo de cliente (Industrial, Comercial, Residencial)</p>
+                    <button class="info-btn" onclick="mostrarInfoModal('segmento')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="segmentoChartKPI2"></canvas>
+                </div>
+            </div>
+
+            <!-- Distribución de Errores -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-bar"></i> Distribución de Errores</h3>
+                    <p>Histograma de errores de facturación por rangos porcentuales</p>
+                    <button class="info-btn" onclick="mostrarInfoModal('distribucion')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="distribucionChartKPI2"></canvas>
+                </div>
+            </div>
+
+            <!-- Impacto Económico -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-dollar-sign"></i> Impacto Económico</h3>
+                    <p>Análisis del impacto financiero de las diferencias de facturación</p>
+                    <button class="info-btn" onclick="mostrarInfoModal('impacto')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content" id="impactoEconomico">
+                    <div class="loading-placeholder">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando datos...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Medidores con Mayor Error -->
+            <div class="chart-container full-width">
+                <div class="chart-header">
+                    <h3><i class="fas fa-list-ol"></i> Top 10 Medidores con Mayor Error</h3>
+                    <p>Medidores que requieren atención prioritaria por diferencias significativas</p>
+                    <button class="info-btn" onclick="mostrarInfoModal('topErrores')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content" id="topErroresTable">
+                    <div class="loading-placeholder">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Cargando tabla...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Evolución Error Promedio -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-area"></i> Evolución del Error Promedio</h3>
+                    <p>Tendencia del error promedio por período</p>
+                    <button class="info-btn" onclick="mostrarInfoModal('evolucion')" title="Ver información">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                </div>
+                <div class="chart-content">
+                    <canvas id="evolucionErrorChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Statistical Summary -->
+        <section class="statistics-section">
+            <div class="stats-header">
+                <h3><i class="fas fa-chart-bar"></i> Estadísticas de Precisión de Facturación</h3>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Total Registros</div>
+                    <div class="stat-value" id="totalRegistros">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Percentil 90 Error</div>
+                    <div class="stat-value" id="percentil90">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Desviación Estándar</div>
+                    <div class="stat-value" id="desviacionStd">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Error Mediano</div>
+                    <div class="stat-value" id="errorMediano">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Cumplimiento Meta</div>
+                    <div class="stat-value success" id="cumplimientoMeta">--</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Estado Global</div>
+                    <div class="stat-value success" id="estadoGlobal">--</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations -->
+        <section class="recommendations-section">
+            <div class="recommendations-header">
+                <h3><i class="fas fa-lightbulb"></i> Acciones Correctivas para Precisión de Facturación</h3>
+                <p>Estrategias para mejorar la exactitud del proceso de facturación energética</p>
+            </div>
+            <div class="recommendations-grid">
+                <div class="recommendation-card high-priority">
+                    <div class="priority-badge">Crítico</div>
+                    <h4>Si Precisión < 98%</h4>
+                    <p>Acciones inmediatas para alcanzar la meta de precisión</p>
+                    <div class="action-items">
+                        <div class="action-item">• Revisar medidores con mayor error absoluto</div>
+                        <div class="action-item">• Verificar constantes de multiplicación</div>
+                        <div class="action-item">• Auditar proceso de validación de lecturas</div>
+                        <div class="action-item">• Calibrar equipos de medición</div>
+                    </div>
+                </div>
+
+                <div class="recommendation-card medium-priority">
+                    <div class="priority-badge">Prevención</div>
+                    <h4>Capacitación y Mejora de Procesos</h4>
+                    <p>Fortalecer las capacidades del personal y sistemas</p>
+                    <div class="action-items">
+                        <div class="action-item">• Capacitar personal de lectura</div>
+                        <div class="action-item">• Implementar alertas tempranas en HES/MDM</div>
+                        <div class="action-item">• Validación cruzada de lecturas</div>
+                        <div class="action-item">• Revisión de procedimientos operativos</div>
+                    </div>
+                </div>
+
+                <div class="recommendation-card low-priority">
+                    <div class="priority-badge">Optimización</div>
+                    <h4>Análisis y Monitoreo Continuo</h4>
+                    <p>Mantener y mejorar los estándares de precisión</p>
+                    <div class="action-items">
+                        <div class="action-item">• Dashboard en tiempo real</div>
+                        <div class="action-item">• Análisis predictivo de errores</div>
+                        <div class="action-item">• Benchmarking con mejores prácticas</div>
+                        <div class="action-item">• Auditorías de calidad regulares</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Calculando precisión de facturación...</p>
+        </div>
+    </div>
+
+    <!-- Modal de Información -->
+    <div id="infoModal" class="modal-overlay" onclick="cerrarInfoModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle"><i class="fas fa-info-circle"></i> Información del Gráfico</h3>
+                <button class="modal-close" onclick="cerrarInfoModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/kpi2_dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/kpi2_info_modals.js') }}"></script>
+</body>
+</html>

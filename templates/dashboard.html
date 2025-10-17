@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard KPIs - Luz del Sur</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1><i class="fas fa-bolt"></i> Luz del Sur</h1>
+                    <p>Dashboard de KPIs - Detección de Facturación Atípica</p>
+                </div>
+                <div class="status-section">
+                    <div class="last-update">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastUpdate">Cargando...</span>
+                    </div>
+                    <button id="refreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Resumen General -->
+        <section class="summary-section">
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalRegistros">0</h3>
+                        <p>Total Registros</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="totalMedidores">0</h3>
+                        <p>Medidores Únicos</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="periodoAnalisis">N/A</h3>
+                        <p>Período de Análisis</p>
+                    </div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="card-content">
+                        <h3 id="consumoPromedio">0</h3>
+                        <p>Consumo Promedio (kWh)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- KPIs Grid -->
+        <section class="kpis-section">
+            <div class="kpis-grid">
+                <!-- KPI 1 -->
+                <div class="kpi-card" data-kpi="kpi_1">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>KPI 1: Lecturas Estimadas</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_1">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_1">0</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_1">2.0</span>%
+                        </div>
+                        <div class="kpi-description">
+                            Porcentaje de medidores con lecturas estimadas
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 2 -->
+                <div class="kpi-card" data-kpi="kpi_2">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-battery-empty"></i>
+                            <h3>KPI 2: Consumo Cero</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_2">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_2">0</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_2">1.0</span>%
+                        </div>
+                        <div class="kpi-description">
+                            Porcentaje de medidores con consumo cero
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 3 -->
+                <div class="kpi-card" data-kpi="kpi_3">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-chart-bar"></i>
+                            <h3>KPI 3: Diferencias Significativas</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_3">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_3">0</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_3">5.0</span>%
+                        </div>
+                        <div class="kpi-description">
+                            Diferencias >15% entre consumo teórico y reportado
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 4 -->
+                <div class="kpi-card" data-kpi="kpi_4">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-coins"></i>
+                            <h3>KPI 4: Índice de Morosidad</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_4">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_4">0</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_4">3.0</span>%
+                        </div>
+                        <div class="kpi-description">
+                            Indicador aproximado basado en patrones de consumo
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 5 -->
+                <div class="kpi-card" data-kpi="kpi_5">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-comments"></i>
+                            <h3>KPI 5: Tasa de Reclamos</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_5">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_5">0</span>
+                            <span class="unit">‰</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_5">1.0</span>‰
+                        </div>
+                        <div class="kpi-description">
+                            Reclamos por cada mil lecturas registradas
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI 6 -->
+                <div class="kpi-card" data-kpi="kpi_6">
+                    <div class="kpi-header">
+                        <div class="kpi-title">
+                            <i class="fas fa-plug"></i>
+                            <h3>KPI 6: Continuidad del Servicio</h3>
+                        </div>
+                        <div class="kpi-status" id="status_kpi_6">OK</div>
+                    </div>
+                    <div class="kpi-content">
+                        <div class="kpi-value">
+                            <span class="value" id="valor_kpi_6">0</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div class="kpi-meta">
+                            Meta: <span id="meta_kpi_6">99.5</span>%
+                        </div>
+                        <div class="kpi-description">
+                            Índice de continuidad basado en patrones de consumo
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Gráficos de Tendencias -->
+        <section class="charts-section">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-chart-line"></i> Tendencias Mensuales</h3>
+                    <p>Evolución de los KPIs principales en el tiempo</p>
+                </div>
+                <div class="chart-content">
+                    <canvas id="tendenciasChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3><i class="fas fa-pie-chart"></i> Distribución de Estados</h3>
+                    <p>Estado actual de todos los KPIs</p>
+                </div>
+                <div class="chart-content">
+                    <canvas id="estadosChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alertas y Notificaciones -->
+        <section class="alerts-section">
+            <div class="alerts-container">
+                <h3><i class="fas fa-bell"></i> Alertas Activas</h3>
+                <div id="alertsList" class="alerts-list">
+                    <!-- Las alertas se cargarán dinámicamente -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p>Cargando datos...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
